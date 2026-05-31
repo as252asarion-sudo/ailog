@@ -45,7 +45,7 @@ export default function NewScreen() {
           setClipboardLoaded(true);
         }
       });
-    }, [mode, hasShareIntent])
+    }, [mode, sharedText])
   );
 
   const handleSave = async () => {
