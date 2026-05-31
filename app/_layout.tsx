@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useRootNavigationState } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SQLiteProvider } from 'expo-sqlite';
 import { ShareIntentProvider, useShareIntentContext } from 'expo-share-intent';
@@ -11,9 +11,11 @@ import { C } from '../lib/colors';
 function ShareIntentNavigator() {
   const { hasShareIntent } = useShareIntentContext();
   const router = useRouter();
+  const navState = useRootNavigationState();
   useEffect(() => {
+    if (!navState?.key) return;
     if (hasShareIntent) router.push('/(tabs)/new');
-  }, [hasShareIntent]);
+  }, [hasShareIntent, navState?.key]);
   return null;
 }
 
