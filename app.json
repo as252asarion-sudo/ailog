@@ -29,6 +29,9 @@
       "expo-router",
       "expo-sqlite",
       "expo-font",
+      ["expo-share-intent", {
+        "androidIntentFilters": ["text/*"]
+      }]
     ]
   }
 }
