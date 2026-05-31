@@ -36,12 +36,16 @@ jobs:
             --bundle-output android/app/src/main/assets/index.android.bundle \
             --assets-dest android/app/src/main/res
 
-      - name: Build Debug APK
-        run: cd android && ./gradlew assembleDebug
+      - name: Configure release signing with debug key
+        run: |
+          sed -i '/release {/a\            signingConfig signingConfigs.debug' android/app/build.gradle
+
+      - name: Build Release APK
+        run: cd android && ./gradlew assembleRelease
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ailog-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: ailog-release
+          path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 7
