@@ -1,0 +1,23 @@
+export const C = {
+  canvas: '#ffffff',
+  surface: '#f6f5f4',
+  surfaceSoft: '#fafaf9',
+  primary: '#5645d4',
+  primaryPressed: '#4534b3',
+  charcoal: '#37352f',
+  slate: '#5d5b54',
+  steel: '#787671',
+  stone: '#a4a097',
+  muted: '#bbb8b1',
+  hairline: '#e5e3df',
+  hairlineSoft: '#ede9e4',
+  hairlineStrong: '#c8c4be',
+  error: '#e03131',
+  // カテゴリカラー
+  catCode: '#5645d4',
+  catHealth: '#1aae39',
+  catFood: '#dd5b00',
+  catWork: '#0075de',
+  catStudy: '#7b3ff2',
+  catOther: '#787671',
+};
