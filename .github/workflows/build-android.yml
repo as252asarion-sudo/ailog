@@ -36,8 +36,9 @@ jobs:
             --bundle-output android/app/src/main/assets/index.android.bundle \
             --assets-dest android/app/src/main/res
 
-      - name: Configure release signing with debug key
+      - name: Configure Gradle and signing
         run: |
+          sed -i 's/gradle-[0-9.]*-bin/gradle-8.13-bin/' android/gradle/wrapper/gradle-wrapper.properties
           sed -i '/release {/a\            signingConfig signingConfigs.debug' android/app/build.gradle
 
       - name: Build Release APK
