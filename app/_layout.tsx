@@ -9,12 +9,16 @@ import { NotesProvider } from '../lib/notes_store';
 import { C } from '../lib/colors';
 
 function ShareIntentNavigator() {
-  const { hasShareIntent } = useShareIntentContext();
+  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntentContext();
   const router = useRouter();
   const navState = useRootNavigationState();
   useEffect(() => {
     if (!navState?.key) return;
-    if (hasShareIntent) router.push('/(tabs)/new');
+    if (hasShareIntent && shareIntent?.text) {
+      const text = shareIntent.text;
+      resetShareIntent();
+      router.push({ pathname: '/(tabs)/new', params: { sharedText: text } });
+    }
   }, [hasShareIntent, navState?.key]);
   return null;
 }

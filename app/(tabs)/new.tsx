@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
-import { useShareIntentContext } from 'expo-share-intent';
 import { useLogs } from '../../lib/store';
 import { C } from '../../lib/colors';
 
@@ -15,7 +14,7 @@ export default function NewScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { addLog, addLogsFromUrl } = useLogs();
-  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntentContext();
+  const { sharedText } = useLocalSearchParams<{ sharedText?: string }>();
   const [mode, setMode] = useState<Mode>('text');
 
   // テキストモード
@@ -29,17 +28,16 @@ export default function NewScreen() {
   const [importing, setImporting] = useState(false);
 
   useEffect(() => {
-    if (hasShareIntent && shareIntent?.text) {
+    if (sharedText) {
       setMode('text');
-      setBody(shareIntent.text);
+      setBody(sharedText);
       setClipboardLoaded(false);
-      resetShareIntent();
     }
-  }, [hasShareIntent]);
+  }, [sharedText]);
 
   useFocusEffect(
     useCallback(() => {
-      if (mode !== 'text' || hasShareIntent) return;
+      if (mode !== 'text' || sharedText) return;
       setClipboardLoaded(false);
       Clipboard.getStringAsync().then((text) => {
         if (text && text.trim().length > 0) {
