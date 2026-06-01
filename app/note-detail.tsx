@@ -7,6 +7,21 @@ import { CATEGORY_COLORS } from '../lib/dummy';
 import { useNotes } from '../lib/notes_store';
 import { C } from '../lib/colors';
 
+// **text** を bold spans に変換
+function InlineText({ text, style }: { text: string; style: any }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  if (parts.length === 1) return <Text style={style}>{text}</Text>;
+  return (
+    <Text style={style}>
+      {parts.map((p, i) =>
+        p.startsWith('**') && p.endsWith('**')
+          ? <Text key={i} style={{ fontWeight: '700' }}>{p.slice(2, -2)}</Text>
+          : p
+      )}
+    </Text>
+  );
+}
+
 function NoteBody({ body }: { body: string }) {
   return (
     <View style={styles.bodyWrap}>
@@ -17,18 +32,22 @@ function NoteBody({ body }: { body: string }) {
         if (line.startsWith('## ')) {
           return <Text key={i} style={styles.heading}>{line.slice(3)}</Text>;
         }
+        // 行全体が **...** → 小見出し扱い
+        if (/^\*\*.+\*\*$/.test(line.trim())) {
+          return <Text key={i} style={styles.subheading}>{line.trim().slice(2, -2)}</Text>;
+        }
         if (line.startsWith('- ')) {
           return (
             <View key={i} style={styles.bulletRow}>
               <Text style={styles.bullet}>•</Text>
-              <Text style={styles.bulletText}>{line.slice(2)}</Text>
+              <InlineText text={line.slice(2)} style={styles.bulletText} />
             </View>
           );
         }
         if (line.trim() === '') {
           return <View key={i} style={styles.spacer} />;
         }
-        return <Text key={i} style={styles.bodyText}>{line}</Text>;
+        return <InlineText key={i} text={line} style={styles.bodyText} />;
       })}
     </View>
   );
@@ -38,15 +57,19 @@ export default function NoteDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { notes, synthesize, removeNote } = useNotes();
+  const { notes, synthesizeFromLogs, removeNote } = useNotes();
   const note = notes.find((n) => n.id === id);
   const [updating, setUpdating] = useState(false);
 
   const handleUpdate = async () => {
     if (!note) return;
+    if (!note.logIds.length) {
+      Alert.alert('再構成できません', 'このノートには元のログ情報が保存されていません');
+      return;
+    }
     setUpdating(true);
     try {
-      await synthesize(note.category);
+      await synthesizeFromLogs(note.logIds, { title: note.title, existingNoteId: note.id });
     } catch (e: any) {
       Alert.alert('エラー', e?.message ?? '更新に失敗しました');
     } finally {

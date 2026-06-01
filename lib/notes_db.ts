@@ -5,6 +5,7 @@ export type Note = {
   title: string;
   body: string;
   category: string;
+  logIds: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -14,6 +15,7 @@ type RawNote = {
   title: string;
   body: string;
   category: string;
+  log_ids: string;
   created_at: string;
   updated_at: string;
 };
@@ -24,6 +26,7 @@ function toNote(r: RawNote): Note {
     title: r.title,
     body: r.body,
     category: r.category,
+    logIds: r.log_ids ? r.log_ids.split(',') : [],
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -36,13 +39,15 @@ export async function getAllNotes(db: SQLiteDatabase): Promise<Note[]> {
 
 export async function upsertNote(db: SQLiteDatabase, note: Note): Promise<void> {
   await db.runAsync(
-    `INSERT INTO notes (id, title, body, category, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?)
+    `INSERT INTO notes (id, title, body, category, log_ids, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        title = excluded.title,
        body = excluded.body,
+       category = excluded.category,
+       log_ids = excluded.log_ids,
        updated_at = excluded.updated_at`,
-    note.id, note.title, note.body, note.category, note.createdAt, note.updatedAt,
+    note.id, note.title, note.body, note.category, note.logIds.join(','), note.createdAt, note.updatedAt,
   );
 }
 

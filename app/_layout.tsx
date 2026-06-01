@@ -36,6 +36,7 @@ export default function RootLayout() {
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                 <Stack.Screen name="detail" options={{ headerShown: false, presentation: 'card' }} />
                 <Stack.Screen name="note-detail" options={{ headerShown: false, presentation: 'card' }} />
+                <Stack.Screen name="log-select" options={{ headerShown: false, presentation: 'card' }} />
               </Stack>
             </NotesProvider>
           </LogsProvider>

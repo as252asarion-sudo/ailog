@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useSQLiteContext } from 'expo-sqlite';
-import { getAllLogs, insertLog, deleteLog as dbDeleteLog } from './db';
+import { getAllLogs, insertLog, deleteLog as dbDeleteLog, updateLog as dbUpdateLog } from './db';
 import type { LogEntry } from './dummy';
 import { analyzeText, fetchFromUrl } from './ai';
 
@@ -9,6 +9,7 @@ type LogsContextType = {
   addLog: (title: string, body: string) => Promise<void>;
   addLogsFromUrl: (url: string) => Promise<number>;
   removeLog: (id: string) => Promise<void>;
+  editLog: (id: string, title: string, body: string, category: LogEntry['category']) => Promise<void>;
   refresh: () => Promise<void>;
 };
 
@@ -69,8 +70,13 @@ export function LogsProvider({ children }: { children: React.ReactNode }) {
     await refresh();
   };
 
+  const editLog = async (id: string, title: string, body: string, category: LogEntry['category']) => {
+    await dbUpdateLog(db, id, title, body, category);
+    await refresh();
+  };
+
   return (
-    <LogsContext.Provider value={{ logs, addLog, addLogsFromUrl, removeLog, refresh }}>
+    <LogsContext.Provider value={{ logs, addLog, addLogsFromUrl, removeLog, editLog, refresh }}>
       {children}
     </LogsContext.Provider>
   );

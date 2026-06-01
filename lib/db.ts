@@ -33,6 +33,8 @@ export async function initDb(db: SQLiteDatabase) {
       updated_at TEXT NOT NULL
     );
   `);
+  // migration: log_ids column (no-op if already exists)
+  await db.execAsync(`ALTER TABLE notes ADD COLUMN log_ids TEXT NOT NULL DEFAULT ''`).catch(() => {});
 }
 
 export async function getAllLogs(db: SQLiteDatabase): Promise<LogEntry[]> {
@@ -49,6 +51,23 @@ export async function insertLog(db: SQLiteDatabase, entry: LogEntry): Promise<vo
 
 export async function deleteLog(db: SQLiteDatabase, id: string): Promise<void> {
   await db.runAsync('DELETE FROM logs WHERE id = ?', id);
+}
+
+export async function updateLog(db: SQLiteDatabase, id: string, title: string, body: string, category: Category): Promise<void> {
+  await db.runAsync(
+    'UPDATE logs SET title = ?, body = ?, category = ? WHERE id = ?',
+    title, body, category, id,
+  );
+}
+
+export async function getLogsByIds(db: SQLiteDatabase, ids: string[]): Promise<LogEntry[]> {
+  if (!ids.length) return [];
+  const placeholders = ids.map(() => '?').join(', ');
+  const rows = await db.getAllAsync<RawRow>(
+    `SELECT * FROM logs WHERE id IN (${placeholders}) ORDER BY created_at DESC`,
+    ids,
+  );
+  return rows.map(toEntry);
 }
 
 export async function searchLogs(db: SQLiteDatabase, query: string, category: string | null): Promise<LogEntry[]> {

@@ -1,12 +1,17 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useSQLiteContext } from 'expo-sqlite';
 import { getAllNotes, upsertNote, deleteNote as dbDeleteNote, type Note } from './notes_db';
-import { searchLogs } from './db';
+import { getLogsByIds } from './db';
 import { synthesizeLogs } from './ai';
+
+type SynthesizeOpts = {
+  title?: string;
+  existingNoteId?: string;
+};
 
 type NotesContextType = {
   notes: Note[];
-  synthesize: (category: string) => Promise<Note>;
+  synthesizeFromLogs: (logIds: string[], opts?: SynthesizeOpts) => Promise<Note>;
   removeNote: (id: string) => Promise<void>;
   refresh: () => Promise<void>;
 };
@@ -23,12 +28,19 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  const synthesize = async (category: string): Promise<Note> => {
-    const logs = await searchLogs(db, '', category);
-    if (!logs.length) throw new Error('このカテゴリにログがありません');
+  const synthesizeFromLogs = async (logIds: string[], opts?: SynthesizeOpts): Promise<Note> => {
+    const selectedLogs = await getLogsByIds(db, logIds);
+    if (!selectedLogs.length) throw new Error('ログが見つかりません');
+
+    // most common category among selected logs
+    const counts = selectedLogs.reduce((acc, l) => {
+      acc[l.category] = (acc[l.category] ?? 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    const category = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
 
     const result = await synthesizeLogs(
-      logs.map((l) => ({ title: l.title, summary: l.summary, body: l.body })),
+      selectedLogs.map((l) => ({ title: l.title, summary: l.summary, body: l.body })),
       category,
     );
 
@@ -36,13 +48,14 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     const pad = (n: number) => String(n).padStart(2, '0');
     const timestamp = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${pad(now.getHours())}:${pad(now.getMinutes())}`;
 
-    const existing = notes.find((n) => n.category === category);
+    const existingNote = opts?.existingNoteId ? notes.find((n) => n.id === opts.existingNoteId) : undefined;
     const note: Note = {
-      id: existing?.id ?? Date.now().toString(),
-      title: result.title,
+      id: existingNote?.id ?? Date.now().toString(),
+      title: opts?.title?.trim() || result.title,
       body: result.body,
       category,
-      createdAt: existing?.createdAt ?? timestamp,
+      logIds,
+      createdAt: existingNote?.createdAt ?? timestamp,
       updatedAt: timestamp,
     };
     await upsertNote(db, note);
@@ -56,7 +69,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <NotesContext.Provider value={{ notes, synthesize, removeNote, refresh }}>
+    <NotesContext.Provider value={{ notes, synthesizeFromLogs, removeNote, refresh }}>
       {children}
     </NotesContext.Provider>
   );
