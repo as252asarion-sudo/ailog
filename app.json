@@ -41,23 +41,6 @@
     "extra": {
       "router": {},
       "eas": {
-        "build": {
-          "experimental": {
-            "ios": {
-              "appExtensions": [
-                {
-                  "targetName": "ShareExtension",
-                  "bundleIdentifier": "com.as252.ailog.share-extension",
-                  "entitlements": {
-                    "com.apple.security.application-groups": [
-                      "group.com.as252.ailog"
-                    ]
-                  }
-                }
-              ]
-            }
-          }
-        },
         "projectId": "9fecdbaa-df59-4f2c-a257-1484efd42f9a"
       }
     }
