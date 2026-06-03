@@ -24,29 +24,17 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Expo prebuild
-        run: npx expo prebuild --platform android --no-install
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
 
-      - name: Bundle JavaScript
-        run: |
-          mkdir -p android/app/src/main/assets
-          npx expo export:embed \
-            --platform android \
-            --entry-file index.ts \
-            --bundle-output android/app/src/main/assets/index.android.bundle \
-            --assets-dest android/app/src/main/res
-
-      - name: Configure Gradle and signing
-        run: |
-          sed -i 's/gradle-[0-9.]*-bin/gradle-8.13-bin/' android/gradle/wrapper/gradle-wrapper.properties
-          sed -i '/release {/a\            signingConfig signingConfigs.debug' android/app/build.gradle
-
-      - name: Build Release AAB
-        run: cd android && ./gradlew bundleRelease
+      - name: Build Android AAB
+        run: eas build --platform android --profile production --local --non-interactive --output ./app.aab
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: ailog-release
-          path: android/app/build/outputs/bundle/release/app-release.aab
-          retention-days: 7
+          path: ./app.aab
+          retention-days: 30
