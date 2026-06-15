@@ -2,6 +2,11 @@ name: Build Android AAB
 
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "ビルド後にクローズドテストへ公開する"
+        type: boolean
+        default: true
 
 jobs:
   build:
@@ -38,3 +43,13 @@ jobs:
           name: ailog-release
           path: ./app.aab
           retention-days: 30
+
+      - name: Publish to closed test track
+        if: ${{ inputs.publish }}
+        run: |
+          echo "$GOOGLE_SERVICE_ACCOUNT_BASE64" | base64 -d > google-service-account.json
+          pip install --quiet google-auth requests
+          python scripts/publish_play.py --aab ./app.aab --track "AIログクローズドテスト"
+          rm -f google-service-account.json
+        env:
+          GOOGLE_SERVICE_ACCOUNT_BASE64: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_BASE64 }}
