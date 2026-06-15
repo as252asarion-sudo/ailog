@@ -5,10 +5,11 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { CATEGORIES, CATEGORY_ICONS, CATEGORY_COLORS, LogEntry, Category } from '../../lib/dummy';
 import { useLogs } from '../../lib/store';
-import { C } from '../../lib/colors';
+import { useTheme } from '../../lib/theme_store';
 
 function LogRow({ item }: { item: LogEntry }) {
   const router = useRouter();
+  const { colors } = useTheme();
   const color = CATEGORY_COLORS[item.category];
   const iconName = CATEGORY_ICONS[item.category];
 
@@ -22,8 +23,8 @@ function LogRow({ item }: { item: LogEntry }) {
         <Ionicons name={iconName as any} size={18} color={color} />
       </View>
       <View style={styles.rowBody}>
-        <Text style={styles.rowTitle} numberOfLines={1}>{item.title}</Text>
-        <Text style={styles.rowPreview} numberOfLines={1}>{item.summary}</Text>
+        <Text style={[styles.rowTitle, { color: colors.charcoal }]} numberOfLines={1}>{item.title}</Text>
+        <Text style={[styles.rowPreview, { color: colors.slate }]} numberOfLines={1}>{item.summary}</Text>
         <View style={[styles.tag, { backgroundColor: color + '18' }]}>
           <Text style={[styles.tagText, { color }]}>{item.category}</Text>
         </View>
@@ -35,6 +36,7 @@ function LogRow({ item }: { item: LogEntry }) {
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const { logs } = useLogs();
+  const { colors } = useTheme();
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Category | null>(null);
 
@@ -45,34 +47,34 @@ export default function SearchScreen() {
   }), [logs, query, selected]);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>AIログ</Text>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.canvas }]}>
+      <View style={[styles.header, { borderBottomColor: colors.hairline }]}>
+        <Text style={[styles.headerTitle, { color: colors.charcoal }]}>AIログ</Text>
       </View>
-      <View style={styles.searchWrap}>
-        <Ionicons name="search" size={16} color={C.stone} style={styles.searchIcon} />
+      <View style={[styles.searchWrap, { backgroundColor: colors.surface, borderColor: colors.hairline }]}>
+        <Ionicons name="search" size={16} color={colors.stone} style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: colors.charcoal }]}
           placeholder="キーワードで検索"
-          placeholderTextColor={C.stone}
+          placeholderTextColor={colors.stone}
           value={query}
           onChangeText={setQuery}
         />
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips} contentContainerStyle={styles.chipsInner}>
         <TouchableOpacity
-          style={[styles.chip, !selected && styles.chipActive]}
+          style={[styles.chip, { borderColor: colors.hairline }, !selected && { backgroundColor: colors.charcoal, borderColor: colors.charcoal }]}
           onPress={() => setSelected(null)}
         >
-          <Text style={[styles.chipText, !selected && styles.chipTextActive]}>すべて</Text>
+          <Text style={[styles.chipText, { color: colors.steel }, !selected && { color: colors.canvas }]}>すべて</Text>
         </TouchableOpacity>
         {CATEGORIES.map((cat) => (
           <TouchableOpacity
             key={cat}
-            style={[styles.chip, selected === cat && styles.chipActive]}
+            style={[styles.chip, { borderColor: colors.hairline }, selected === cat && { backgroundColor: colors.charcoal, borderColor: colors.charcoal }]}
             onPress={() => setSelected(selected === cat ? null : cat)}
           >
-            <Text style={[styles.chipText, selected === cat && styles.chipTextActive]}>{cat}</Text>
+            <Text style={[styles.chipText, { color: colors.steel }, selected === cat && { color: colors.canvas }]}>{cat}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -82,34 +84,31 @@ export default function SearchScreen() {
         renderItem={({ item }) => <LogRow item={item} />}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListEmptyComponent={<Text style={styles.empty}>該当するログがありません</Text>}
+        ListEmptyComponent={<Text style={[styles.empty, { color: colors.stone }]}>該当するログがありません</Text>}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.canvas },
+  container: { flex: 1 },
   header: {
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: C.hairline,
   },
-  headerTitle: { fontSize: 20, fontWeight: '600', color: C.charcoal },
+  headerTitle: { fontSize: 20, fontWeight: '600' },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     margin: 16,
-    backgroundColor: C.surface,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: C.hairline,
     paddingHorizontal: 12,
     height: 44,
   },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 15, color: C.charcoal },
+  searchInput: { flex: 1, fontSize: 15 },
   chips: { maxHeight: 44 },
   chipsInner: { paddingHorizontal: 16, gap: 8, alignItems: 'center' },
   chip: {
@@ -117,19 +116,16 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 9999,
     borderWidth: 1,
-    borderColor: C.hairline,
   },
-  chipActive: { backgroundColor: C.charcoal, borderColor: C.charcoal },
-  chipText: { fontSize: 13, color: C.steel, fontWeight: '500' },
-  chipTextActive: { color: C.canvas },
+  chipText: { fontSize: 13, fontWeight: '500' },
   list: { padding: 16 },
   row: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   iconWrap: { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 },
   rowBody: { flex: 1, gap: 4 },
-  rowTitle: { fontSize: 15, fontWeight: '600', color: C.charcoal },
-  rowPreview: { fontSize: 13, color: C.slate },
+  rowTitle: { fontSize: 15, fontWeight: '600' },
+  rowPreview: { fontSize: 13 },
   tag: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, marginTop: 2 },
   tagText: { fontSize: 11, fontWeight: '600' },
   separator: { height: 16 },
-  empty: { textAlign: 'center', color: C.stone, marginTop: 40, fontSize: 14 },
+  empty: { textAlign: 'center', marginTop: 40, fontSize: 14 },
 });

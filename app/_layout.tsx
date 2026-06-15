@@ -6,7 +6,19 @@ import { ShareIntentProvider, useShareIntentContext } from 'expo-share-intent';
 import { initDb } from '../lib/db';
 import { LogsProvider } from '../lib/store';
 import { NotesProvider } from '../lib/notes_store';
-import { C } from '../lib/colors';
+import { ThemeProvider, useTheme } from '../lib/theme_store';
+
+function ThemedStack() {
+  const { colors } = useTheme();
+  return (
+    <Stack screenOptions={{ contentStyle: { backgroundColor: colors.canvas } }}>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="detail" options={{ headerShown: false, presentation: 'card' }} />
+      <Stack.Screen name="note-detail" options={{ headerShown: false, presentation: 'card' }} />
+      <Stack.Screen name="log-select" options={{ headerShown: false, presentation: 'card' }} />
+    </Stack>
+  );
+}
 
 function ShareIntentNavigator() {
   const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntentContext();
@@ -29,17 +41,14 @@ export default function RootLayout() {
     <ShareIntentProvider>
       <SafeAreaProvider>
         <SQLiteProvider databaseName="ailog.db" onInit={initDb}>
+          <ThemeProvider>
           <LogsProvider>
             <NotesProvider>
               <ShareIntentNavigator />
-              <Stack screenOptions={{ contentStyle: { backgroundColor: C.canvas } }}>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="detail" options={{ headerShown: false, presentation: 'card' }} />
-                <Stack.Screen name="note-detail" options={{ headerShown: false, presentation: 'card' }} />
-                <Stack.Screen name="log-select" options={{ headerShown: false, presentation: 'card' }} />
-              </Stack>
+              <ThemedStack />
             </NotesProvider>
           </LogsProvider>
+          </ThemeProvider>
         </SQLiteProvider>
       </SafeAreaProvider>
     </ShareIntentProvider>

@@ -32,9 +32,21 @@ export async function initDb(db: SQLiteDatabase) {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
   `);
-  // migration: log_ids column (no-op if already exists)
   await db.execAsync(`ALTER TABLE notes ADD COLUMN log_ids TEXT NOT NULL DEFAULT ''`).catch(() => {});
+}
+
+export async function getSetting(db: SQLiteDatabase, key: string, fallback: string): Promise<string> {
+  const row = await db.getFirstAsync<{ value: string }>('SELECT value FROM settings WHERE key = ?', key);
+  return row?.value ?? fallback;
+}
+
+export async function setSetting(db: SQLiteDatabase, key: string, value: string): Promise<void> {
+  await db.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, value);
 }
 
 export async function getAllLogs(db: SQLiteDatabase): Promise<LogEntry[]> {

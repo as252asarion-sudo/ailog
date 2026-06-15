@@ -1,35 +1,28 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Linking } from 'react-native';
+import * as IntentLauncher from 'expo-intent-launcher';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { useLogs } from '../../lib/store';
-import { C } from '../../lib/colors';
-
-type Mode = 'text' | 'url';
+import { useTheme } from '../../lib/theme_store';
 
 export default function NewScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { addLog, addLogsFromUrl } = useLogs();
+  const { addLog } = useLogs();
   const { sharedText } = useLocalSearchParams<{ sharedText?: string }>();
-  const [mode, setMode] = useState<Mode>('text');
+  const { colors, accent } = useTheme();
 
-  // テキストモード
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [clipboardLoaded, setClipboardLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // URLモード
-  const [url, setUrl] = useState('');
-  const [importing, setImporting] = useState(false);
-
   useEffect(() => {
     if (sharedText) {
-      setMode('text');
       setBody(sharedText);
       setClipboardLoaded(false);
     }
@@ -37,7 +30,7 @@ export default function NewScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (mode !== 'text' || sharedText) return;
+      if (sharedText) return;
       setClipboardLoaded(false);
       Clipboard.getStringAsync().then((text) => {
         if (text && text.trim().length > 0) {
@@ -45,7 +38,7 @@ export default function NewScreen() {
           setClipboardLoaded(true);
         }
       });
-    }, [mode, sharedText])
+    }, [sharedText])
   );
 
   const handleSave = async () => {
@@ -66,193 +59,91 @@ export default function NewScreen() {
     }
   };
 
-  const handleImport = async () => {
-    if (!url.trim()) {
-      Alert.alert('URLを入力してください');
-      return;
-    }
-    setImporting(true);
-    try {
-      const count = await addLogsFromUrl(url.trim());
-      setUrl('');
-      Alert.alert('取り込み完了', `${count}件のログを保存しました`, [
-        { text: 'OK', onPress: () => router.navigate('/(tabs)/') },
-      ]);
-    } catch (e: any) {
-      Alert.alert('取り込み失敗', e?.message ?? 'エラーが発生しました');
-    } finally {
-      setImporting(false);
-    }
-  };
-
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>AIログ</Text>
+    <View style={[styles.container, { backgroundColor: colors.canvas, paddingTop: insets.top }]}>
+      <View style={[styles.header, { borderBottomColor: colors.hairline }]}>
+        <Text style={[styles.headerTitle, { color: colors.charcoal }]}>AIログ</Text>
       </View>
 
-      <View style={styles.modeSwitch}>
-        <TouchableOpacity
-          style={[styles.modeBtn, mode === 'text' && styles.modeBtnActive]}
-          onPress={() => setMode('text')}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="clipboard-outline" size={14} color={mode === 'text' ? C.canvas : C.slate} />
-          <Text style={[styles.modeBtnText, mode === 'text' && styles.modeBtnTextActive]}>テキスト貼り付け</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.modeBtn, mode === 'url' && styles.modeBtnActive]}
-          onPress={() => setMode('url')}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="link-outline" size={14} color={mode === 'url' ? C.canvas : C.slate} />
-          <Text style={[styles.modeBtnText, mode === 'url' && styles.modeBtnTextActive]}>Gemini共有URL</Text>
-        </TouchableOpacity>
-      </View>
-
-      {mode === 'text' ? (
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {clipboardLoaded && (
-            <View style={styles.clipboardBanner}>
-              <Ionicons name="clipboard-outline" size={14} color={C.slate} />
-              <Text style={styles.clipboardText}>クリップボードから読み込みました</Text>
-            </View>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {clipboardLoaded && (
+          <View style={[styles.clipboardBanner, { backgroundColor: colors.surface }]}>
+            <Ionicons name="clipboard-outline" size={14} color={colors.slate} />
+            <Text style={[styles.clipboardText, { color: colors.slate }]}>クリップボードから読み込みました</Text>
+          </View>
+        )}
+        <Text style={[styles.label, { color: colors.charcoal }]}>タイトル</Text>
+        <TextInput
+          style={[styles.input, { borderColor: colors.hairlineStrong, color: colors.charcoal, backgroundColor: colors.canvas }]}
+          placeholder="タイトル（省略可・AIが自動生成）"
+          placeholderTextColor={colors.stone}
+          value={title}
+          onChangeText={setTitle}
+        />
+        <View style={styles.appShortcuts}>
+          {[
+            { name: 'ChatGPT', pkg: 'com.openai.chatgpt', cls: 'com.openai.chatgpt.MainActivity', web: 'https://chat.openai.com', color: '#10A37F', label: 'GPT' },
+            { name: 'Claude', pkg: 'com.anthropic.claude', cls: 'com.anthropic.claude.MainActivity', web: 'https://claude.ai', color: '#D4621E', label: 'Cl' },
+            { name: 'Gemini', pkg: 'com.google.android.apps.bard', cls: 'com.google.android.apps.bard.shellapp.BardEntryPointActivity', web: 'https://gemini.google.com', color: '#4285F4', label: 'G' },
+          ].map((app) => (
+            <TouchableOpacity key={app.name} style={styles.appBtn} onPress={() => IntentLauncher.startActivityAsync('android.intent.action.MAIN', { packageName: app.pkg, className: app.cls, flags: 0x10000000 }).catch(() => Linking.openURL(app.web))} activeOpacity={0.7}>
+              <View style={[styles.appIcon, { backgroundColor: app.color }]}>
+                <Text style={styles.appIconLabel}>{app.label}</Text>
+              </View>
+              <Text style={[styles.appName, { color: colors.slate }]}>{app.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <View style={styles.labelRow}>
+          <Text style={[styles.label, { color: colors.charcoal }]}>テキストを貼り付け</Text>
+          {body.length > 0 && (
+            <TouchableOpacity onPress={() => { setBody(''); setClipboardLoaded(false); }} hitSlop={8} style={[styles.clearBtn, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.clearBtnText, { color: colors.slate }]}>クリア</Text>
+            </TouchableOpacity>
           )}
-          <Text style={styles.label}>タイトル</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="タイトルを入力してください"
-            placeholderTextColor={C.stone}
-            value={title}
-            onChangeText={setTitle}
-          />
-          <Text style={[styles.label, { marginTop: 20 }]}>テキストを貼り付け</Text>
-          <TextInput
-            style={[styles.input, styles.textarea]}
-            placeholder="ここにテキストを貼り付けてください..."
-            placeholderTextColor={C.stone}
-            value={body}
-            onChangeText={setBody}
-            multiline
-            textAlignVertical="top"
-          />
-          <View style={styles.aiNotice}>
-            <Ionicons name="sparkles" size={14} color={C.primary} />
-            <Text style={styles.aiNoticeText}>AIが内容を解析し、最適なカテゴリを自動で設定します。</Text>
-          </View>
-          <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} activeOpacity={0.85} disabled={saving}>
-            {saving ? <ActivityIndicator color={C.canvas} /> : <Text style={styles.saveBtnText}>保存する</Text>}
-          </TouchableOpacity>
-        </ScrollView>
-      ) : (
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.geminiInfo}>
-            <Ionicons name="information-circle-outline" size={16} color={C.primary} />
-            <Text style={styles.geminiInfoText}>Geminiの会話を共有リンクからまとめて取り込めます。会話内の全ターンを自動でログに保存します。</Text>
-          </View>
-          <Text style={styles.label}>Gemini共有リンク</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="https://gemini.google.com/share/..."
-            placeholderTextColor={C.stone}
-            value={url}
-            onChangeText={setUrl}
-            autoCapitalize="none"
-            keyboardType="url"
-          />
-          <TouchableOpacity style={[styles.saveBtn, importing && { opacity: 0.6 }]} onPress={handleImport} activeOpacity={0.85} disabled={importing}>
-            {importing
-              ? <><ActivityIndicator color={C.canvas} /><Text style={[styles.saveBtnText, { marginLeft: 8 }]}>取り込み中...</Text></>
-              : <Text style={styles.saveBtnText}>取り込む</Text>
-            }
-          </TouchableOpacity>
-        </ScrollView>
-      )}
+        </View>
+        <TextInput
+          style={[styles.input, styles.textarea, { borderColor: colors.hairlineStrong, color: colors.charcoal, backgroundColor: colors.canvas }]}
+          placeholder="ここにテキストを貼り付けてください..."
+          placeholderTextColor={colors.stone}
+          value={body}
+          onChangeText={setBody}
+          multiline
+          textAlignVertical="top"
+        />
+        <View style={[styles.aiNotice, { backgroundColor: accent + '18' }]}>
+          <Ionicons name="sparkles" size={14} color={accent} />
+          <Text style={[styles.aiNoticeText, { color: accent }]}>AIが内容を解析し、最適なカテゴリを自動で設定します。</Text>
+        </View>
+        <TouchableOpacity style={[styles.saveBtn, { backgroundColor: accent }, saving && { opacity: 0.6 }]} onPress={handleSave} activeOpacity={0.85} disabled={saving}>
+          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>保存する</Text>}
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.canvas },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: C.hairline,
-  },
-  headerTitle: { fontSize: 20, fontWeight: '600', color: C.charcoal },
-  modeSwitch: {
-    flexDirection: 'row',
-    margin: 16,
-    backgroundColor: C.surface,
-    borderRadius: 10,
-    padding: 3,
-    gap: 3,
-  },
-  modeBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  modeBtnActive: { backgroundColor: C.primary },
-  modeBtnText: { fontSize: 12, fontWeight: '500', color: C.slate },
-  modeBtnTextActive: { color: C.canvas },
+  container: { flex: 1 },
+  header: { paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
+  headerTitle: { fontSize: 20, fontWeight: '600' },
   scroll: { flex: 1 },
   content: { padding: 20, gap: 8 },
-  label: { fontSize: 14, fontWeight: '500', color: C.charcoal },
-  input: {
-    borderWidth: 1,
-    borderColor: C.hairlineStrong,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 15,
-    color: C.charcoal,
-    backgroundColor: C.canvas,
-    marginTop: 8,
-  },
+  labelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 },
+  clearBtn: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  clearBtnText: { fontSize: 12, fontWeight: '500' },
+  label: { fontSize: 14, fontWeight: '500' },
+  input: { borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 15, marginTop: 8 },
   textarea: { height: 200, paddingTop: 12 },
-  aiNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: '#eeeaf8',
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 8,
-  },
-  aiNoticeText: { fontSize: 13, color: C.primary, flex: 1, lineHeight: 18 },
-  clipboardBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: C.surface,
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 4,
-  },
-  clipboardText: { fontSize: 12, color: C.slate },
-  saveBtn: {
-    backgroundColor: C.primary,
-    borderRadius: 8,
-    height: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  saveBtnText: { color: C.canvas, fontSize: 15, fontWeight: '600' },
-  geminiInfo: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    backgroundColor: '#eeeaf8',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-  },
-  geminiInfoText: { flex: 1, fontSize: 13, color: C.primary, lineHeight: 18 },
+  aiNotice: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 8, padding: 12, marginTop: 8 },
+  aiNoticeText: { fontSize: 13, flex: 1, lineHeight: 18 },
+  clipboardBanner: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 8, padding: 10, marginBottom: 4 },
+  clipboardText: { fontSize: 12 },
+  saveBtn: { borderRadius: 8, height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 20 },
+  saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  appShortcuts: { flexDirection: 'row', gap: 16, marginTop: 16, marginBottom: 4 },
+  appBtn: { alignItems: 'center', gap: 4 },
+  appIcon: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  appIconLabel: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  appName: { fontSize: 11 },
 });

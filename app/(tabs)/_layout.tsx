@@ -2,12 +2,11 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { C } from '../../lib/colors';
+import { useTheme } from '../../lib/theme_store';
 
 function TabBar({ state, descriptors, navigation }: any) {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const { colors, accent } = useTheme();
 
   const tabs = [
     { name: 'index', label: 'ホーム', iconActive: 'home', iconInactive: 'home-outline' },
@@ -18,7 +17,7 @@ function TabBar({ state, descriptors, navigation }: any) {
   ];
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+    <View style={[styles.container, { height: 56 + insets.bottom, paddingBottom: insets.bottom, backgroundColor: colors.canvas, borderTopColor: colors.hairline }]}>
       {state.routes.map((route: any, index: number) => {
         const tab = tabs[index];
         const isFocused = state.index === index;
@@ -33,8 +32,8 @@ function TabBar({ state, descriptors, navigation }: any) {
 
         if (isCenter) {
           return (
-            <TouchableOpacity key={route.key} onPress={onPress} style={styles.centerBtn} activeOpacity={0.85}>
-              <Ionicons name="add" size={28} color={C.canvas} />
+            <TouchableOpacity key={route.key} onPress={onPress} style={[styles.centerBtn, { backgroundColor: accent, shadowColor: accent }]} activeOpacity={0.85}>
+              <Ionicons name="add" size={28} color={colors.canvas} />
             </TouchableOpacity>
           );
         }
@@ -44,7 +43,7 @@ function TabBar({ state, descriptors, navigation }: any) {
             <Ionicons
               name={(isFocused ? tab.iconActive : tab.iconInactive) as any}
               size={22}
-              color={isFocused ? C.primary : C.steel}
+              color={isFocused ? accent : colors.steel}
             />
           </TouchableOpacity>
         );
@@ -56,9 +55,7 @@ function TabBar({ state, descriptors, navigation }: any) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: C.canvas,
     borderTopWidth: 1,
-    borderTopColor: C.hairline,
     height: 56,
     alignItems: 'center',
   },
@@ -72,11 +69,9 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: -16,
-    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

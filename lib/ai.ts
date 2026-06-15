@@ -33,6 +33,24 @@ export async function fetchFromUrl(url: string): Promise<GeminiConversation[]> {
   throw new Error('対応していないURLです');
 }
 
+export type SelectLogsResult = {
+  logIds: string[];
+  title?: string;
+};
+
+export async function selectLogsByPrompt(
+  prompt: string,
+  logs: Array<{ id: string; title: string; summary: string; category: string }>,
+): Promise<SelectLogsResult> {
+  const res = await fetch(`${BASE_URL}/api/ailog/select-logs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, logs }),
+  });
+  if (!res.ok) throw new Error(`ログ選択失敗: ${res.status}`);
+  return res.json();
+}
+
 export type SynthesizeResult = {
   title: string;
   body: string;
